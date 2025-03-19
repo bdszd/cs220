@@ -7,7 +7,8 @@ use std::hash::Hash;
 #[derive(Debug)]
 pub struct Unique<I: Iterator> {
     // TODO: remove `_marker` and add necessary fields as you want
-    _marker: std::marker::PhantomData<I>,
+    iter: I,
+    unique: HashSet<I::Item>,
 }
 
 impl<I: Iterator> Iterator for Unique<I>
@@ -17,7 +18,12 @@ where
     type Item = I::Item;
 
     fn next(&mut self) -> Option<Self::Item> {
-        todo!()
+        while let Some(item) = self.iter.by_ref().next() {
+            if self.unique.insert(item.clone()) {
+                return Some(item);
+            }
+        }
+        None
     }
 }
 
@@ -25,7 +31,9 @@ where
 #[derive(Debug)]
 pub struct Chain<I1: Iterator, I2: Iterator> {
     // TODO: remove `_marker` and add necessary fields as you want
-    _marker: std::marker::PhantomData<(I1, I2)>,
+    iter1: I1,
+    iter2: I2,
+    is_first: bool,
 }
 
 impl<T: Eq + Hash + Clone, I1: Iterator<Item = T>, I2: Iterator<Item = T>> Iterator
@@ -34,7 +42,17 @@ impl<T: Eq + Hash + Clone, I1: Iterator<Item = T>, I2: Iterator<Item = T>> Itera
     type Item = T;
 
     fn next(&mut self) -> Option<Self::Item> {
-        todo!()
+        if self.is_first {
+            match self.iter1.next() {
+                Some(item) => Some(item),
+                None => {
+                    self.is_first = false;
+                    self.iter2.next()
+                }
+            }
+        } else {
+            self.iter2.next()
+        }
     }
 }
 
@@ -42,14 +60,19 @@ impl<T: Eq + Hash + Clone, I1: Iterator<Item = T>, I2: Iterator<Item = T>> Itera
 #[derive(Debug)]
 pub struct Enumerate<I: Iterator> {
     // TODO: remove `_marker` and add necessary fields as you want
-    _marker: std::marker::PhantomData<I>,
+    iter: I,
+    index: usize,
 }
 
 impl<I: Iterator> Iterator for Enumerate<I> {
     type Item = (usize, I::Item);
 
     fn next(&mut self) -> Option<Self::Item> {
-        todo!()
+        self.iter.next().map(|item| {
+            let ret = (self.index, item);
+            self.index += 1;
+            ret
+        })
     }
 }
 
@@ -60,14 +83,18 @@ impl<I: Iterator> Iterator for Enumerate<I> {
 #[derive(Debug)]
 pub struct Zip<I1: Iterator, I2: Iterator> {
     // TODO: remove `_marker` and add necessary fields as you want
-    _marker: std::marker::PhantomData<(I1, I2)>,
+    iter1: I1,
+    iter2: I2,
 }
 
 impl<I1: Iterator, I2: Iterator> Iterator for Zip<I1, I2> {
     type Item = (I1::Item, I2::Item);
 
     fn next(&mut self) -> Option<Self::Item> {
-        todo!()
+        match (self.iter1.next(), self.iter2.next()) {
+            (Some(item1), Some(item2)) => Some((item1, item2)),
+            _ => None,
+        }
     }
 }
 
@@ -78,7 +105,10 @@ pub trait MyIterTools: Iterator {
     where
         Self: Sized,
     {
-        todo!()
+        Unique {
+            iter: self,
+            unique: HashSet::new(),
+        }
     }
 
     /// Returns an iterator that chains `self` and `other` together.
@@ -86,7 +116,11 @@ pub trait MyIterTools: Iterator {
     where
         Self: Sized,
     {
-        todo!()
+        Chain {
+            iter1: self,
+            iter2: other,
+            is_first: true,
+        }
     }
 
     /// Returns an iterator that iterates over `self` and enumerates each element.
@@ -94,7 +128,10 @@ pub trait MyIterTools: Iterator {
     where
         Self: Sized,
     {
-        todo!()
+        Enumerate {
+            iter: self,
+            index: 0,
+        }
     }
 
     /// Returns an iterator that zips `self` and `other` together.
@@ -102,7 +139,10 @@ pub trait MyIterTools: Iterator {
     where
         Self: Sized,
     {
-        todo!()
+        Zip {
+            iter1: self,
+            iter2: other,
+        }
     }
 
     /// Foldleft for `MyIterTools`
@@ -111,7 +151,11 @@ pub trait MyIterTools: Iterator {
         Self: Sized,
         F: FnMut(Self::Item, T) -> T,
     {
-        todo!()
+        let mut fold = init;
+        for item in self {
+            fold = f(item, fold);
+        }
+        fold
     }
 }
 

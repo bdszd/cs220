@@ -10,7 +10,7 @@ pub trait Transform<T> {
 
 impl<T1, T2, Tr1: Transform<T1>, Tr2: Transform<T2>> Transform<(T1, T2)> for (Tr1, Tr2) {
     fn transform(&self, value: (T1, T2)) -> (T1, T2) {
-        todo!()
+        ((self.0).transform(value.0), (self.1).transform(value.1))
     }
 }
 
@@ -20,7 +20,7 @@ pub struct Identity;
 
 impl<T> Transform<T> for Identity {
     fn transform(&self, value: T) -> T {
-        todo!()
+        value
     }
 }
 

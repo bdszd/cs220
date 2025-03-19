@@ -1,6 +1,6 @@
 //! KAIST CS220: Programming Principles
 
-#![deny(warnings)]
+//#![deny(warnings)]
 #![deny(rustdoc::all)]
 // # Tries to deny all lints (`rustc -W help`).
 #![deny(

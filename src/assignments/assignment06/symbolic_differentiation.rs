@@ -42,7 +42,15 @@ impl Add for Rational {
     type Output = Self;
 
     fn add(self, rhs: Self) -> Self::Output {
-        todo!()
+        if self == ZERO {
+            return rhs;
+        } else if rhs == ZERO {
+            return self;
+        } else {
+            let mut numerator = self.numerator * rhs.denominator + self.denominator * rhs.numerator;
+            let mut denominator = self.denominator * rhs.denominator;
+
+        }
     }
 }
 
@@ -50,7 +58,13 @@ impl Mul for Rational {
     type Output = Self;
 
     fn mul(self, rhs: Self) -> Self::Output {
-        todo!()
+        if self == ZERO || rhs == ZERO {
+            return ZERO;
+        } else {
+            let mut numerator = self.numerator * rhs.numerator;
+            let mut denominator = self.denominator * rhs.denominator;
+
+        }
     }
 }
 
@@ -58,7 +72,7 @@ impl Sub for Rational {
     type Output = Self;
 
     fn sub(self, rhs: Self) -> Self::Output {
-        todo!()
+        let neg = 
     }
 }
 

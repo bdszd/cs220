@@ -32,5 +32,66 @@ use inner::*;
 /// e.g. `1+2+3` should be parsed into `(1+2)+3`, not `1+(2+3)` because the associativity of
 /// plus("add" in our hw) operator is `Left`.
 pub fn parse_command(line: &str) -> Result<Command> {
-    todo!("fill here")
+    let mut pairs = SyntaxParser::parse(Rule::command, line)
+        .map_err(|e| anyhow::anyhow!("Parse error: {}", e))?;
+
+    let pair = pairs
+        .next()
+        .ok_or_else(|| anyhow::anyhow!("Empty command"))?;
+
+    let mut inner = pair.into_inner();
+    let first = inner
+        .next()
+        .ok_or_else(|| anyhow::anyhow!("Invalid command"))?;
+
+    let (variable, expression) = if first.as_rule() == Rule::var {
+        let expr = inner
+            .next()
+            .ok_or_else(|| anyhow::anyhow!("Expected expression"))?;
+        (Some(first.as_str().to_string()), parse_expression(expr)?)
+    } else {
+        (None, parse_expression(first)?)
+    };
+
+    Ok(Command {
+        variable,
+        expression,
+    })
+}
+
+lazy_static::lazy_static! {
+    static ref PREC_CLIMBER: PrecClimber<Rule> = PrecClimber::new(vec![
+        Operator::new(Rule::add, Assoc::Left) |
+        Operator::new(Rule::subtract, Assoc::Left),
+        Operator::new(Rule::multiply, Assoc::Left) |
+        Operator::new(Rule::divide, Assoc::Left),
+        Operator::new(Rule::power, Assoc::Right),
+    ]);
+}
+
+fn parse_expression(pair: Pair<'_, Rule>) -> Result<Expression> {
+    PREC_CLIMBER.climb(
+        pair.into_inner(),
+        |pair| match pair.as_rule() {
+            Rule::num => Ok(Expression::Num(pair.as_str().parse()?)),
+            Rule::var => Ok(Expression::Variable(pair.as_str().to_string())),
+            Rule::expr => parse_expression(pair),
+            _ => unreachable!(),
+        },
+        |lhs, op, rhs| {
+            let op = match op.as_rule() {
+                Rule::add => BinOp::Add,
+                Rule::subtract => BinOp::Subtract,
+                Rule::multiply => BinOp::Multiply,
+                Rule::divide => BinOp::Divide,
+                Rule::power => BinOp::Power,
+                _ => unreachable!(),
+            };
+            Ok(Expression::BinOp {
+                op,
+                lhs: Box::new(lhs?),
+                rhs: Box::new(rhs?),
+            })
+        },
+    )
 }

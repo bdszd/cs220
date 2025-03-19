@@ -27,5 +27,28 @@
 ///
 /// See `test_shell` for more examples.
 pub fn parse_shell_command(command: &str) -> Vec<String> {
-    todo!()
+    let mut ret = Vec::new();
+    let mut s = String::new();
+    let mut in_quotes = false;
+
+    for c in command.chars() {
+        match c {
+            ' ' if !in_quotes => {
+                if !s.is_empty() {
+                    ret.push(s);
+                    s = String::new();
+                }
+            }
+            '\'' => {
+                in_quotes = !in_quotes;
+            }
+            _ => {
+                s.push(c);
+            }
+        }
+    }
+    if !s.is_empty() {
+        ret.push(s);
+    }
+    ret
 }
