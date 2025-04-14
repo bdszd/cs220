@@ -2,6 +2,7 @@
 
 use std::fmt;
 use std::ops::*;
+use num::integer::gcd;
 
 /// Rational number represented by two isize, numerator and denominator.
 ///
@@ -43,13 +44,20 @@ impl Add for Rational {
 
     fn add(self, rhs: Self) -> Self::Output {
         if self == ZERO {
-            return rhs;
+            rhs
         } else if rhs == ZERO {
-            return self;
+            self
         } else {
             let mut numerator = self.numerator * rhs.denominator + self.denominator * rhs.numerator;
             let mut denominator = self.denominator * rhs.denominator;
+            let gcd = gcd(numerator, denominator);
 
+            numerator /= gcd;
+            denominator /= gcd;
+
+            if denominator < 0 {
+                numerator = -numerator;
+                
         }
     }
 }
