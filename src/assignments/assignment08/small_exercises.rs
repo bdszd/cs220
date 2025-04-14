@@ -7,8 +7,12 @@
 ///
 /// Refer `test_repeat` in `assignment08_grade.rs` for detailed examples.
 pub fn repeat<T, F: FnMut(T) -> T>(n: usize, mut f: F) -> impl FnMut(T) -> T {
-    todo!();
-    f // This line has been added to prevent compile error. You can erase this line.
+    move |mut x: T| {
+        for _ in 0..n {
+            x = f(x);
+        }
+        x
+    }// This line has been added to prevent compile error. You can erase this line.
 }
 
 /// Funny Map
@@ -20,7 +24,12 @@ pub fn repeat<T, F: FnMut(T) -> T>(n: usize, mut f: F) -> impl FnMut(T) -> T {
 ///
 /// Refer `test_funny_map` in `assignment08_grade.rs` for detailed examples.
 pub fn funny_map<T, F: Fn(T) -> T>(f: F, vs: Vec<T>) -> Vec<T> {
-    todo!()
+    vs.into_iter()
+        .enumerate()
+        .map(|i, mut v| {
+            repeat(i, v)
+        })
+        .collect()
 }
 
 /// Count Repeat
@@ -33,7 +42,15 @@ pub fn count_repeat<T, F: Fn(T) -> T>(f: F, x: T) -> usize
 where
     T: PartialEq + Copy,
 {
-    todo!()
+    let mut set = vec![x];
+    let mut result = x;
+    loop {
+        let next = f(result);
+        if vec.contains(&next) {
+            break set.len();
+        }
+        set.push(next);
+        result = next;
 }
 
 /// Either `T1`, or `T2`.
@@ -64,6 +81,8 @@ impl<T1, T2> Either2<T1, T2> {
         F1: FnOnce(T1) -> U1,
         F2: FnOnce(T2) -> U2,
     {
-        todo!()
+        match self {
+            Either2::Case1{ inner } => Either2::Case1{ inner: f1(inner) },
+            Either2::Case2{ inner } => Either2::Case2{ inner: f2(inner) },
     }
 }
