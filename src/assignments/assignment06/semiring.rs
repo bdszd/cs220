@@ -106,15 +106,15 @@ pub struct Polynomial<C: Semiring> {
 impl<C: Semiring> Semiring for Polynomial<C> {
     fn zero() -> Self {
         let mut ret = HashMap::new();
-        ret.insert(0, C::zero());
+        let _unused = ret.insert(0, C::zero());
         Polynomial {           
-            coefficients: ret,
+            coefficients: ret
         }
     }
 
     fn one() -> Self {
         let mut ret = HashMap::new();
-        ret.insert(0, C::one());
+        let _unused = ret.insert(0, C::one());
         Polynomial {
             coefficients: ret,
         }
@@ -123,12 +123,12 @@ impl<C: Semiring> Semiring for Polynomial<C> {
     fn add(&self, rhs: &Self) -> Self {
         let mut ret = HashMap::new();
         let mut temp = rhs.coefficients.clone();
-        for (k, &v) in &self.coefficients {
-            if let Some(value) = rhs.get(&k) {
-                ret.insert(k, v.add(value));
-                let _ = temp.remove(&k);
+        for (k, v) in &self.coefficients {
+            if let Some(value) = rhs.coefficients.get(k) {
+                let _unused = ret.insert(*k, v.add(value));
+                let _unused = temp.remove(k);
             } else {
-                ret.insert(k, *v);
+                let _unused = ret.insert(*k, v.clone());
             }
         }
         if !temp.is_empty() {
@@ -141,13 +141,13 @@ impl<C: Semiring> Semiring for Polynomial<C> {
 
     fn mul(&self, rhs: &Self) -> Self {
         let mut ret = HashMap::new();
-        for (k1, &v1) in &self.coefficients {
-            for (k2, &v2) in &rhs.coefficients {
-                ret.insert(k1 + k2, v1.mul(v2));
+        for (k1, v1) in &self.coefficients {
+            for (k2, v2) in &rhs.coefficients {
+                let _unused = ret.insert(k1 + k2, v1.mul(v2));
             }
         }
         polynomial {
-            coefficients: ret,
+            coefficients: ret
         }
     }
 }
@@ -156,18 +156,18 @@ impl<C: Semiring> Polynomial<C> {
     /// Constructs polynomial `x`.
     pub fn x() -> Self {
         let mut ret = HashMap::new();
-        ret.insert(1, C::one());
+        let _unused = ret.insert(1, C::one());
         Polynomial {
-            coefficients: ret,
+            coefficients: ret
         }
     }
 
     /// Evaluates the polynomial with the given value.
     pub fn eval(&self, value: C) -> C {
         let mut ret = C::zero();
-        for (k, &v) in &self.coefficients {
+        for (k, v) in &self.coefficients {
             let mut temp = C::one();
-            for _ in 0..k {
+            for _ in 0..*k {
                 temp = temp.mul(&value);
             }
             temp = temp.mul(v);
@@ -179,9 +179,9 @@ impl<C: Semiring> Polynomial<C> {
     /// Constructs polynomial `ax^n`.
     pub fn term(a: C, n: u64) -> Self {
         let mut ret = HashMap::new();
-        ret.insert(n, a);
+        let _unused = ret.insert(n, a);
         Polynomial {
-            ret,
+            coefficients: ret
         }
     }
 }
@@ -189,7 +189,7 @@ impl<C: Semiring> Polynomial<C> {
 impl<C: Semiring> From<C> for Polynomial<C> {
     fn from(value: C) -> Self {
         let mut ret = HashMap::new();
-        ret.insert(0, value);
+        let _unused = ret.insert(0, value);
         Polynomial {
             coefficients: ret
         }
@@ -216,6 +216,19 @@ impl<C: Semiring> std::str::FromStr for Polynomial<C> {
     type Err = (); // Ignore this for now...
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        todo!()
+        let mut ret = HashMap::new();
+        for item in s.split(" + ") {
+            let (a, n) = if let Some((a, n)) = item.split_once("x^") {
+                (a.parse::<usize>()?, n.parse::<usize>()?)
+            } else if let Some((a, _)) = item.split_once("x") {
+                (a.parse::<usize>()?, 1)
+            } else {
+                (item.parse::<usize>()?, 0)
+            };
+
+            let coeff = from_usize<c>(a);
+            let _unused = ret.insert(n, coeff);
+        }
+        Ok(Polynomial { coefficients: ret })
     }
 }
