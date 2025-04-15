@@ -23,7 +23,7 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 enum TVRoomState {
     Opened,
     Closed,
@@ -56,12 +56,17 @@ impl TVRoom {
     ///
     /// Returns `None` if the TV room is already opened.
     pub fn open(&self) -> Option<Manager<'_>> {
-        todo!()
+        if *self.state.borrow() == TVRoomState::Opened {
+            None
+        } else {
+            *self.state.borrow_mut() = TVRoomState::Opened;
+            Some(Manager::new(&self.state))
+        }
     }
 
     /// Returns whether the TV room is opened or not.
     pub fn is_opened(&self) -> bool {
-        todo!()
+        *self.state.borrow() == TVRoomState::Opened
     }
 }
 
@@ -84,7 +89,9 @@ impl<'a> Manager<'a> {
 
     /// Adds new guest to the TV room.
     pub fn new_guest(&self) -> Guest<'a> {
-        todo!()
+        Guest {
+            inner: Rc::clone(&self.inner),
+        }
     }
 }
 
@@ -108,6 +115,6 @@ impl<'a> Watcher<'a> {
 impl Drop for Watcher<'_> {
     fn drop(&mut self) {
         // When the last person leaves the TV room, the TV room should be closed.
-        todo!()
+        *self.tvstate.borrow_mut() = TVRoomState::Closed;
     }
 }

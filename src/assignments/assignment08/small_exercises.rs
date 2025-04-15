@@ -12,7 +12,7 @@ pub fn repeat<T, F: FnMut(T) -> T>(n: usize, mut f: F) -> impl FnMut(T) -> T {
             x = f(x);
         }
         x
-    }// This line has been added to prevent compile error. You can erase this line.
+    } // This line has been added to prevent compile error. You can erase this line.
 }
 
 /// Funny Map
@@ -26,8 +26,11 @@ pub fn repeat<T, F: FnMut(T) -> T>(n: usize, mut f: F) -> impl FnMut(T) -> T {
 pub fn funny_map<T, F: Fn(T) -> T>(f: F, vs: Vec<T>) -> Vec<T> {
     vs.into_iter()
         .enumerate()
-        .map(|i, mut v| {
-            repeat(i, v)
+        .map(|(n, mut v)| {
+            for i in 0..n {
+                v = f(v);
+            }
+            v
         })
         .collect()
 }
@@ -46,11 +49,12 @@ where
     let mut result = x;
     loop {
         let next = f(result);
-        if vec.contains(&next) {
+        if set.contains(&next) {
             break set.len();
         }
         set.push(next);
         result = next;
+    }
 }
 
 /// Either `T1`, or `T2`.
@@ -82,7 +86,8 @@ impl<T1, T2> Either2<T1, T2> {
         F2: FnOnce(T2) -> U2,
     {
         match self {
-            Either2::Case1{ inner } => Either2::Case1{ inner: f1(inner) },
-            Either2::Case2{ inner } => Either2::Case2{ inner: f2(inner) },
+            Either2::Case1 { inner } => Either2::Case1 { inner: f1(inner) },
+            Either2::Case2 { inner } => Either2::Case2 { inner: f2(inner) },
+        }
     }
 }

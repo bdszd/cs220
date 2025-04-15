@@ -35,7 +35,10 @@ pub fn zero<T: 'static>() -> Church<T> {
 
 /// Implement a function to add 1 to a given Church numeral.
 pub fn succ<T: 'static>(n: Church<T>) -> Church<T> {
-    Rc::new(move |f| Rc::new(move |x| f(n(f)(x))))
+    Rc::new(move |f| {
+        let nf = n(f.clone());
+        Rc::new(move |x| f(nf(x)))
+    })
 }
 
 /// Implement a function to add two Church numerals.
@@ -50,9 +53,9 @@ pub fn add<T: 'static>(n: Church<T>, m: Church<T>) -> Church<T> {
 /// Implement a function to multiply (mult) two Church numerals.
 pub fn mult<T: 'static>(n: Church<T>, m: Church<T>) -> Church<T> {
     Rc::new(move |f| {
-        let nf = n(f.clone());
-        let mf = m(f);
-        Rc::new(move |x| mf(nf)(x))
+        let nf = n.clone();
+        let mf = m.clone();
+        Rc::new(move |x| mf(nf(f.clone()))(x))
     })
 }
 
@@ -67,22 +70,29 @@ pub fn exp<T: 'static>(n: usize, m: usize) -> Church<T> {
     // ACTION ITEM: Uncomment the following lines and replace `todo!()` with your code.
     let n = from_usize(n);
     let m = from_usize(m);
-    Rc::new(move |f| {
-        let g = n.clone();
-        Rc::new(move |x| m(n(g)(f))(x))
-    })
+    m(n)
 }
 
 /// Implement a function to convert a Church numeral to a usize type.
 pub fn to_usize<T: 'static + Default>(n: Church<T>) -> usize {
-    let inc = Rc::new(|x: usize| x + 1);
-    let start = 0;
-    (n)(inc)(start)
+    let count = Rc::new(RefCell::new(0usize));
+    let count2 = count.clone();
+
+    let f = Rc::new(move |_| {
+        *count2.borrow_mut() += 1;
+        T::default()
+    });
+
+    let nf = n(f);
+    let _unused = nf(T::default());
+
+    let x = *count.borrow();
+    x
 }
 
 /// Implement a function to convert a usize type to a Church numeral.
 pub fn from_usize<T: 'static>(n: usize) -> Church<T> {
-     Rc::new(move |f| {
+    Rc::new(move |f| {
         Rc::new(move |x| {
             let mut result = x;
             for _ in 0..n {
