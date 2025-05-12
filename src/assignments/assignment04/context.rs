@@ -34,38 +34,24 @@ impl Context {
                 .get(s)
                 .copied()
                 .ok_or_else(|| anyhow::anyhow!("Undifined variable: {}", s)),
-            Expression::BinOp { op, lhs, rhs } => match op {
-                BinOp::Add => {
-                    let expr_l = self.calc_expression(lhs)?;
-                    let expr_r = self.calc_expression(rhs)?;
-                    Ok(expr_l + expr_r)
-                }
-                BinOp::Subtract => {
-                    let expr_l = self.calc_expression(lhs)?;
-                    let expr_r = self.calc_expression(rhs)?;
-                    Ok(expr_l - expr_r)
-                }
-                BinOp::Multiply => {
-                    let expr_l = self.calc_expression(lhs)?;
-                    let expr_r = self.calc_expression(rhs)?;
-                    Ok(expr_l * expr_r)
-                }
-                BinOp::Divide => {
-                    let expr_l = self.calc_expression(lhs)?;
-                    let expr_r = self.calc_expression(rhs)?;
-                    if expr_r != 0.0 {
-                        Ok(expr_l / expr_r)
-                    } else {
-                        bail!("Division by zero")
-                    }
-                }
-                BinOp::Power => {
-                    let expr_l = self.calc_expression(lhs)?;
-                    let expr_r = self.calc_expression(rhs)?;
+            Expression::BinOp { op, lhs, rhs } => {
+                let expr_l = self.calc_expression(lhs)?;
+                let expr_r = self.calc_expression(rhs)?;
 
-                    Ok(expr_l.powf(expr_r))
+                match op {
+                    BinOp::Add => Ok(expr_l + expr_r),
+                    BinOp::Subtract => Ok(expr_l - expr_r),
+                    BinOp::Multiply => Ok(expr_l * expr_r),
+                    BinOp::Divide => {
+                        if expr_r != 0.0 {
+                            Ok(expr_l / expr_r)
+                        } else {
+                            bail!("Division by zero")
+                        }
+                    }
+                    BinOp::Power => Ok(expr_l.powf(expr_r)),
                 }
-            },
+            }
         }
     }
 

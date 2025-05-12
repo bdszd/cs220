@@ -1,6 +1,10 @@
 //! Small exercises.
 
-use std::collections::HashSet;
+use num::integer::gcd;
+use std::cell::RefCell;
+use std::cmp::Reverse;
+use std::collections::{BinaryHeap, HashSet};
+use std::rc::Rc;
 
 use itertools::*;
 
@@ -17,7 +21,17 @@ use itertools::*;
 ///
 /// Consult <https://en.wikipedia.org/wiki/Inversion_(discrete_mathematics)> for more details of inversion.
 pub fn inversion<T: Ord>(inner: Vec<T>) -> Vec<(usize, usize)> {
-    todo!()
+    let mut ret: Vec<(usize, usize)> = Vec::new();
+    let len = inner.len();
+
+    for v in 0..len {
+        for m in v + 1..len {
+            if inner[v] > inner[m] {
+                ret.push((v, m));
+            }
+        }
+    }
+    ret
 }
 
 /// Represents a node of tree data structure.
@@ -68,7 +82,21 @@ pub enum Node<T> {
 ///
 /// is `1 -> 2 -> 5 -> 6 -> 3 -> 4 -> 7 -> 8 -> 9`.
 pub fn traverse_preorder<T>(root: Node<T>) -> Vec<T> {
-    todo!()
+    let mut ret: Vec<T> = Vec::new();
+
+    match root {
+        Node::NonLeaf((val, nvec)) => {
+            ret.push(val);
+            for node in nvec {
+                ret.extend(traverse_preorder(node));
+            }
+            ret
+        }
+        Node::Leaf(val) => {
+            ret.push(val);
+            ret
+        }
+    }
 }
 
 /// File
@@ -114,7 +142,25 @@ pub enum File {
 /// Output: `[("a1", 1), ("a2", 3), ("b1", 3), ("a", 4), ("c", 8), ("b2", 15), ("b", 18), ("root",
 /// 30)]`
 pub fn du_sort(root: &File) -> Vec<(&str, usize)> {
-    todo!()
+    let mut vol: Vec<(&str, usize)> = Vec::new();
+
+    fn helper<'a>(file: &'a File, vol: &mut Vec<(&'a str, usize)>) -> usize {
+        match file {
+            File::Directory(s, v) => {
+                let total: usize = v.iter().map(|f| helper(f, vol)).sum();
+                vol.push((s.as_str(), total));
+                total
+            }
+            File::Data(s, size) => {
+                vol.push((s.as_str(), *size));
+                *size
+            }
+        }
+    }
+
+    let _ = helper(root, &mut vol);
+    vol.sort_by(|a, b| a.1.cmp(&b.1).then_with(|| a.0.cmp(b.0)));
+    vol
 }
 
 /// Remove all even numbers inside a vector using the given mutable reference.
@@ -129,7 +175,7 @@ pub fn du_sort(root: &File) -> Vec<(&str, usize)> {
 /// ```
 #[allow(clippy::ptr_arg)]
 pub fn remove_even(inner: &mut Vec<i64>) {
-    todo!()
+    inner.retain(|x| x % 2 == 0);
 }
 
 /// Remove all duplicate occurences of a number inside the array.
@@ -146,7 +192,9 @@ pub fn remove_even(inner: &mut Vec<i64>) {
 /// ```
 #[allow(clippy::ptr_arg)]
 pub fn remove_duplicate(inner: &mut Vec<i64>) {
-    todo!()
+    let mut dup = HashSet::new();
+
+    inner.retain(|x| dup.insert(*x));
 }
 
 /// Returns the natural join of two tables using the first column as the join argument.
@@ -172,15 +220,36 @@ pub fn remove_duplicate(inner: &mut Vec<i64>) {
 ///  20231234 |    Mike   |     ME
 /// ```
 pub fn natural_join(table1: Vec<Vec<String>>, table2: Vec<Vec<String>>) -> Vec<Vec<String>> {
-    todo!()
+    table1
+        .into_iter()
+        .flat_map(|t1| {
+            table2.iter().flat_map(move |t2| {
+                if t1[0] == t2[0] {
+                    let mut row = t1.clone();
+                    row.extend_from_slice(&t2[1..]);
+                    Some(row)
+                } else {
+                    None
+                }
+            })
+        })
+        .collect()
 }
 
 /// You can freely add more fields.
-struct Pythagorean;
+struct Pythagorean {
+    m: u64,
+    n: u64,
+    heap: BinaryHeap<Reverse<(u64, u64, u64)>>,
+}
 
 impl Pythagorean {
     fn new() -> Self {
-        todo!()
+        Self {
+            m: 2,
+            n: 1,
+            heap: BinaryHeap::new(),
+        }
     }
 }
 
@@ -188,7 +257,25 @@ impl Iterator for Pythagorean {
     type Item = (u64, u64, u64);
 
     fn next(&mut self) -> Option<Self::Item> {
-        todo!()
+        loop {
+            while self.n < self.m {
+                if (self.m - self.n) % 2 == 1 && gcd(self.m, self.n) == 1 {
+                    let a = self.m * self.m - self.n * self.n;
+                    let b = 2 * self.m * self.n;
+                    let c = self.m * self.m + self.n;
+
+                    let (a, b) = if a < b { (a, b) } else { (b, a) };
+                    self.heap.push(Reverse((c, a, b)));
+                }
+                self.n += 1;
+            }
+            self.m += 1;
+            self.n = 1;
+
+            if let Some(Reverse(trip)) = self.heap.pop() {
+                return Some(trip);
+            }
+        }
     }
 }
 

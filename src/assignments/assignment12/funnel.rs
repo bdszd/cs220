@@ -19,5 +19,27 @@ where
     T: Send + 'static,
     F: Send + Sync + Fn(&T) -> bool + 'static,
 {
-    todo!()
+    let f = Arc::new(f);
+
+    thread::spawn(move || {
+        let mut handles = vec![];
+
+        for rx in rxs {
+            let tx = tx.clone();
+            let f = f.clone();
+
+            let handle = thread::spawn(move || {
+                while let Ok(val) = rx.recv() {
+                    if f(&val) {
+                        let _unused = tx.send(val);
+                    }
+                }
+            });
+            handles.push(handle);
+        }
+
+        for handle in handles {
+            let _unused = handle.join();
+        }
+    })
 }

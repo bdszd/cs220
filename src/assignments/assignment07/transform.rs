@@ -42,7 +42,7 @@ impl<T, F: Fn(T) -> T> From<F> for Custom<T, F> {
 
 impl<T, F: Fn(T) -> T> Transform<T> for Custom<T, F> {
     fn transform(&self, value: T) -> T {
-        todo!()
+        (self.f)(value)
     }
 }
 
@@ -67,7 +67,10 @@ impl<T, Tr: Transform<T>> Repeat<T, Tr> {
 
 impl<T, Tr: Transform<T>> Transform<T> for Repeat<T, Tr> {
     fn transform(&self, mut value: T) -> T {
-        todo!()
+        for _ in 0..self.n {
+            value = self.inner.transform(value);
+        }
+        value
     }
 }
 
@@ -90,6 +93,12 @@ impl<T: Clone + Eq, Tr: Transform<T>> RepeatUntilConverge<T, Tr> {
 
 impl<T: Clone + Eq, Tr: Transform<T>> Transform<T> for RepeatUntilConverge<T, Tr> {
     fn transform(&self, mut value: T) -> T {
-        todo!()
+        loop {
+            let next = self.inner.transform(value.clone());
+            if next == value {
+                return value;
+            }
+            value = next;
+        }
     }
 }

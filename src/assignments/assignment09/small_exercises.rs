@@ -17,8 +17,23 @@ use itertools::Itertools;
 /// assert_eq!(is_fibonacci([1, 1, 2, 3, 5, 8, 13].into_iter()), true);
 /// assert_eq!(is_fibonacci([1, 1, 2, 3, 5, 8, 14].into_iter()), false);
 /// ```
-pub fn is_fibonacci(inner: impl Iterator<Item = i64>) -> bool {
-    todo!()
+pub fn is_fibonacci(mut inner: impl Iterator<Item = i64>) -> bool {
+    let Some(mut first) = inner.next() else {
+        return true;
+    };
+    let Some(mut second) = inner.next() else {
+        return true;
+    };
+
+    for val in inner {
+        if val != (first + second) {
+            return false;
+        } else {
+            first = second;
+            second = val;
+        }
+    }
+    true
 }
 
 /// Returns the sum of `f(v)` for all element `v` the given array.
@@ -32,7 +47,7 @@ pub fn is_fibonacci(inner: impl Iterator<Item = i64>) -> bool {
 /// assert_eq!(sigma([1, 2].into_iter(), |x| x * 4), 12);
 /// ```
 pub fn sigma<T, F: Fn(T) -> i64>(inner: impl Iterator<Item = T>, f: F) -> i64 {
-    todo!()
+    inner.map(f).sum()
 }
 
 /// Alternate elements from three iterators until they have run out.
@@ -54,7 +69,13 @@ pub fn interleave3<T>(
     list2: impl Iterator<Item = T>,
     list3: impl Iterator<Item = T>,
 ) -> Vec<T> {
-    todo!()
+    let mut ret: Vec<T> = Vec::new();
+    for (a, b, c) in itertools::multizip((list1, list2, list3)) {
+        ret.push(a);
+        ret.push(b);
+        ret.push(c);
+    }
+    ret
 }
 
 /// Alternate elements from array of n iterators until they have run out.
@@ -74,8 +95,20 @@ pub fn interleave3<T>(
 pub fn interleave_n<T, const N: usize>(
     mut iters: [impl Iterator<Item = T>; N],
 ) -> impl Iterator<Item = T> {
-    todo!();
-    std::iter::empty()
+    let mut ret: Vec<T> = Vec::new();
+    let len = iters.len();
+    loop {
+        #[allow(clippy::needless_range_loop)]
+        for i in 0..len - 1 {
+            ret.push(iters[i].next().unwrap());
+        }
+        if let Some(v) = iters[len - 1].next() {
+            ret.push(v);
+        } else {
+            break;
+        }
+    }
+    ret.into_iter()
 }
 
 /// Returns mean of k smallest value's mean.
@@ -95,7 +128,10 @@ pub fn interleave_n<T, const N: usize>(
 /// );
 /// ```
 pub fn k_smallest_mean(inner: impl Iterator<Item = i64>, k: usize) -> f64 {
-    todo!()
+    let mut result: Vec<i64> = inner.collect();
+    result.sort();
+    let sum: i64 = result.iter().take(k).sum();
+    sum as f64 / k as f64
 }
 
 /// Returns mean for each class.
@@ -125,7 +161,16 @@ pub fn k_smallest_mean(inner: impl Iterator<Item = i64>, k: usize) -> f64 {
 /// );
 /// ```
 pub fn calculate_mean(inner: impl Iterator<Item = (String, i64)>) -> HashMap<String, f64> {
-    todo!()
+    let mut ret: HashMap<String, (i64, usize)> = HashMap::new();
+    for (s, v) in inner {
+        let entry = ret.entry(s).or_insert((0, 0));
+        entry.0 += v;
+        entry.1 += 1;
+    }
+
+    ret.into_iter()
+        .map(|(s, (sum, count))| (s, sum as f64 / count as f64))
+        .collect()
 }
 
 /// Among the cartesian product of input vectors, return the number of sets whose sum equals `n`.
@@ -147,7 +192,15 @@ pub fn calculate_mean(inner: impl Iterator<Item = (String, i64)>) -> HashMap<Str
 /// assert_eq!(sum_is_n(vec![vec![1, 2, 3], vec![2, 3]], 2), 0);
 /// ```
 pub fn sum_is_n(inner: Vec<Vec<i64>>, n: i64) -> usize {
-    todo!()
+    let mut count = 0;
+    for m in &inner[0] {
+        for i in &inner[1] {
+            if m * i == n {
+                count += 1;
+            }
+        }
+    }
+    count
 }
 
 /// Returns a new vector that contains the item that appears `n` times in the input vector in
@@ -164,7 +217,18 @@ pub fn sum_is_n(inner: Vec<Vec<i64>>, n: i64) -> usize {
 /// assert_eq!(find_count_n(vec![1, 2, 3, 4, 4], 1), vec![1, 2, 3]);
 /// ```
 pub fn find_count_n(inner: Vec<usize>, n: usize) -> Vec<usize> {
-    todo!()
+    let mut count = HashMap::new();
+
+    for num in inner {
+        *count.entry(num).or_insert(0) += 1;
+    }
+
+    let mut ret: Vec<usize> = count
+        .into_iter()
+        .filter_map(|(k, v)| if v == n { Some(k) } else { None })
+        .collect();
+    ret.sort();
+    ret
 }
 
 /// Return the position of the median element in the vector.
@@ -187,8 +251,18 @@ pub fn find_count_n(inner: Vec<usize>, n: usize) -> Vec<usize> {
 /// assert_eq!(position_median(vec![1, 3, 3, 6, 7, 8, 9]), Some(3));
 /// assert_eq!(position_median(vec![1, 3, 3, 3]), Some(1));
 /// ```
-pub fn position_median<T: Ord>(inner: Vec<T>) -> Option<usize> {
-    todo!()
+pub fn position_median<T: Ord + Clone + PartialEq>(inner: Vec<T>) -> Option<usize> {
+    if inner.is_empty() {
+        return None;
+    }
+    let mut sorted = inner.clone();
+    sorted.sort();
+
+    let n = sorted.len();
+    let median = if n % 2 == 0 { n / 2 } else { (n - 1) / 2 };
+
+    let val = &sorted[median];
+    inner.iter().position(|x| x == val)
 }
 
 /// Returns the sum of all elements in a two-dimensional array.
@@ -203,7 +277,11 @@ pub fn position_median<T: Ord>(inner: Vec<T>) -> Option<usize> {
 /// );
 /// ```
 pub fn two_dimensional_sum(inner: impl Iterator<Item = impl Iterator<Item = i64>>) -> i64 {
-    todo!()
+    let mut ret: i64 = 0;
+    for iter in inner {
+        ret += iter.sum::<i64>();
+    }
+    ret
 }
 
 /// Returns whether the given string is palindrome or not.
@@ -215,5 +293,11 @@ pub fn two_dimensional_sum(inner: impl Iterator<Item = impl Iterator<Item = i64>
 ///
 /// Consult <https://en.wikipedia.org/wiki/Palindrome>.
 pub fn is_palindrome(s: String) -> bool {
-    todo!()
+    let mut iter = s.chars();
+    while let (Some(front), Some(back)) = (iter.next(), iter.next_back()) {
+        if front != back {
+            return false;
+        }
+    }
+    true
 }

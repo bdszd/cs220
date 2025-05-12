@@ -25,7 +25,7 @@ impl<T: Debug> Node<T> {
 #[derive(Debug)]
 pub struct SinglyLinkedList<T: Debug> {
     /// Head node of the list. If it is `None`, the list is empty.
-    head: Option<Node<T>>,
+    head: Option<Box<Node<T>>>,
 }
 
 impl<T: Debug> Default for SinglyLinkedList<T> {
@@ -42,37 +42,82 @@ impl<T: Debug> SinglyLinkedList<T> {
 
     /// Adds the given node to the front of the list.
     pub fn push_front(&mut self, value: T) {
-        todo!()
+        let mut new_node = Node::new(value);
+        if let Some(node) = self.head.take() {
+            new_node.next = Some(Box::new(*node));
+        }
+        self.head = Some(Box::new(new_node));
     }
 
     /// Adds the given node to the back of the list.
     pub fn push_back(&mut self, value: T) {
-        todo!()
+        let mut new_node = Node::new(value);
+        let mut curr_node = &mut self.head;
+        while let Some(ref mut node) = curr_node {
+            curr_node = &mut node.next;
+        }
+        *curr_node = Some(Box::new(new_node));
     }
 
     /// Removes and returns the node at the front of the list.
     pub fn pop_front(&mut self) -> Option<T> {
-        todo!()
+        self.head.take().map(|node| {
+            self.head = node.next;
+            node.value
+        })
     }
 
     /// Removes and returns the node at the back of the list.
     pub fn pop_back(&mut self) -> Option<T> {
-        todo!()
+        let mut curr_node = &mut self.head;
+        if curr_node.is_none() {
+            return None;
+        }
+
+        if curr_node.as_ref().unwrap().next.is_none() {
+            return self.head.take().map(|node| node.value);
+        }
+
+        while let Some(ref mut node) = curr_node {
+            if node.next.as_ref().unwrap().next.is_none() {
+                let last = node.next.take().unwrap();
+                return Some(last.value);
+            }
+            curr_node = &mut node.next;
+        }
+        None
     }
 
     /// Create a new list from the given vector `vec`.
     pub fn from_vec(vec: Vec<T>) -> Self {
-        todo!()
+        let mut ret = Self::new();
+        for val in vec.into_iter().rev() {
+            ret.push_front(val);
+        }
+        ret
     }
 
     /// Convert the current list into a vector.
     pub fn into_vec(self) -> Vec<T> {
-        todo!()
+        let mut ret = Vec::new();
+        let mut curr_node = self.head;
+        while let Some(node) = curr_node {
+            ret.push(node.value);
+            curr_node = node.next;
+        }
+        ret
     }
 
     /// Return the length (i.e., number of nodes) of the list.
     pub fn length(&self) -> usize {
-        todo!()
+        let mut count = 0;
+        let mut curr_node = self.head.as_ref();
+
+        while let Some(node) = curr_node {
+            count += 1;
+            curr_node = node.next.as_ref();
+        }
+        count
     }
 
     /// Apply function `f` on every element of the list.
@@ -81,7 +126,9 @@ impl<T: Debug> SinglyLinkedList<T> {
     ///
     /// `self`: `[1, 2]`, `f`: `|x| x + 1` ==> `[2, 3]`
     pub fn map<F: Fn(T) -> T>(self, f: F) -> Self {
-        todo!()
+        let mut vec = self.into_vec();
+        vec = vec.into_iter().map(f).collect();
+        Self::from_vec(vec)
     }
 
     /// Apply given function `f` for each adjacent pair of elements in the list.
@@ -97,18 +144,32 @@ impl<T: Debug> SinglyLinkedList<T> {
     where
         T: Clone,
     {
-        todo!()
+        if self.length() < 2 {
+            return self;
+        }
+        let vec = self.into_vec();
+        let mut ret = Vec::new();
+        for i in 0..vec.len().saturating_sub(1) {
+            ret.push(f(vec[i].clone(), vec[i + 1].clone()));
+        }
+        Self::from_vec(ret)
     }
 }
 
 // A list of lists.
 impl<T: Debug> SinglyLinkedList<SinglyLinkedList<T>> {
     /// Flatten the list of lists into a single list.
-    ///
+    ///s
     /// # Examples
     /// `self`: `[[1, 2, 3], [4, 5, 6], [7, 8]]`
     /// ==> `[1, 2, 3, 4, 5, 6, 7, 8]`
     pub fn flatten(self) -> SinglyLinkedList<T> {
-        todo!()
+        let mut vec = Vec::new();
+        let mut list = self.into_vec();
+        for temp in list.into_iter() {
+            let values = temp.into_vec();
+            vec.extend(values);
+        }
+        SinglyLinkedList::from_vec(vec)
     }
 }

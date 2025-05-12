@@ -35,17 +35,12 @@ pub fn parse_command(line: &str) -> Result<Command> {
     let mut pairs = SyntaxParser::parse(Rule::command, line)
         .map_err(|e| anyhow::anyhow!("Parse error: {}", e))?;
 
-    let pair = pairs
+    let first = pairs
         .next()
         .ok_or_else(|| anyhow::anyhow!("Empty command"))?;
 
-    let mut inner = pair.into_inner();
-    let first = inner
-        .next()
-        .ok_or_else(|| anyhow::anyhow!("Invalid command"))?;
-
     let (variable, expression) = if first.as_rule() == Rule::var {
-        let expr = inner
+        let expr = pairs
             .next()
             .ok_or_else(|| anyhow::anyhow!("Expected expression"))?;
         (Some(first.as_str().to_string()), parse_expression(expr)?)
@@ -61,10 +56,12 @@ pub fn parse_command(line: &str) -> Result<Command> {
 
 lazy_static::lazy_static! {
     static ref PREC_CLIMBER: PrecClimber<Rule> = PrecClimber::new(vec![
-        Operator::new(Rule::add, Assoc::Left) |
-        Operator::new(Rule::subtract, Assoc::Left),
-        Operator::new(Rule::multiply, Assoc::Left) |
-        Operator::new(Rule::divide, Assoc::Left),
+        Operator::new(Rule::subtract, Assoc::Left) |
+        Operator::new(Rule::add, Assoc::Left),
+        Operator::new(Rule::divide, Assoc::Left) |
+        Operator::new(Rule::multiply, Assoc::Left),
+
+
         Operator::new(Rule::power, Assoc::Right),
     ]);
 }
@@ -76,7 +73,7 @@ fn parse_expression(pair: Pair<'_, Rule>) -> Result<Expression> {
             Rule::num => Ok(Expression::Num(pair.as_str().parse()?)),
             Rule::var => Ok(Expression::Variable(pair.as_str().to_string())),
             Rule::expr => parse_expression(pair),
-            _ => unreachable!(),
+            _ => bail!("Unexpected rule: {:?}", pair.as_rule()),
         },
         |lhs, op, rhs| {
             let op = match op.as_rule() {
@@ -85,7 +82,7 @@ fn parse_expression(pair: Pair<'_, Rule>) -> Result<Expression> {
                 Rule::multiply => BinOp::Multiply,
                 Rule::divide => BinOp::Divide,
                 Rule::power => BinOp::Power,
-                _ => unreachable!(),
+                _ => bail!("Unknown operator: {:?}", op.as_rule()),
             };
             Ok(Expression::BinOp {
                 op,
