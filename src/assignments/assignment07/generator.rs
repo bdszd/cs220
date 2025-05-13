@@ -35,7 +35,7 @@ impl<T, S> Iterator for Generator<T, S> {
 ///
 /// HINT: Consult <https://en.wikipedia.org/wiki/Fibonacci_sequence>
 pub fn fib_generator(first: usize, second: usize) -> Generator<usize, (usize, usize)> {
-    let state = (first, second);
+    let mut state = (first, second);
     let f = |state: &mut (usize, usize)| {
         let next = state.0 + state.1;
         state.0 = state.1;

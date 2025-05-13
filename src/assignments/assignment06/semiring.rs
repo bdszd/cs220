@@ -137,9 +137,11 @@ impl<C: Semiring> Semiring for Polynomial<C> {
         let mut ret = HashMap::new();
         for (k1, v1) in &self.coefficients {
             for (k2, v2) in &rhs.coefficients {
-                let _unused = ret.insert(k1 + k2, v1.mul(v2));
+                let entry = ret.entry(*k1 + *k2).or_insert(C::zero());
+                *entry = entry.add(&v1.mul(v2));
             }
         }
+        ret.retain(|_, value| *value != C::zero());
         Polynomial { coefficients: ret }
     }
 }
@@ -161,7 +163,7 @@ impl<C: Semiring> Polynomial<C> {
                 temp = temp.mul(&value);
             }
             temp = temp.mul(v);
-            let _unused = ret.add(&temp);
+            ret = ret.add(&temp);
         }
         ret
     }
@@ -205,7 +207,14 @@ impl<C: Semiring> std::str::FromStr for Polynomial<C> {
         let mut ret = HashMap::new();
         for item in s.split(" + ") {
             let (a, n) = if let Some((a, n)) = item.split_once("x^") {
-                (a.parse::<usize>().unwrap(), n.parse::<u64>().unwrap())
+                let coeff = if a.is_empty() {
+                    1
+                } else {
+                    a.parse::<usize>().unwrap()
+                };
+                (coeff, n.parse::<u64>().unwrap())
+            } else if item == "x" {
+                (1, 1)
             } else if let Some((a, _)) = item.split_once("x") {
                 (a.parse::<usize>().unwrap(), 1)
             } else {

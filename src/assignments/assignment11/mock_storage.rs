@@ -49,11 +49,11 @@ impl Storage for MockStorage {
     fn upload(&self, name: &str, size: usize) -> Result<(), usize> {
         let mut files = self.files.borrow_mut();
 
-        let len = self.used();
-        let old = files.get(name).copied().unwrap_or(0);
+        let len: usize = files.values().sum();
+        let old: usize = files.get(name).copied().unwrap_or(0);
         let new = len - old + size;
 
-        if new > files.capacity() {
+        if new > self.capacity() {
             Err(self.capacity - len)
         } else {
             let _unused = files.insert(name.to_string(), size);
@@ -62,7 +62,7 @@ impl Storage for MockStorage {
     }
 
     fn used(&self) -> usize {
-        self.files.borrow_mut().values().sum()
+        self.files.borrow().values().sum()
     }
 
     fn capacity(&self) -> usize {
@@ -105,6 +105,8 @@ impl<'a, T: Storage> UsageAnalyzer<'a, T> {
 
     /// Returns `true` if the usage of the internal storage is under the bound.
     pub fn is_usage_under_bound(&self) -> bool {
-        self.storage.used() as f64 / self.storage.capacity() as f64 <= self.bound
+        let used = self.storage.used();
+        let capacity = self.storage.capacity();
+        used as f64 / capacity as f64 <= self.bound
     }
 }
