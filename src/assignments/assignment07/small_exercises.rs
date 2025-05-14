@@ -10,7 +10,7 @@ impl<T: Eq> Iterator for FindIter<'_, T> {
     type Item = usize;
 
     fn next(&mut self) -> Option<Self::Item> {
-        while self.curr < self.base.len() {
+        while self.curr + self.query.len() <= self.base.len() {
             if &self.base[self.curr..self.curr + self.query.len()] == self.query {
                 let ret = self.curr;
                 self.curr += 1;
@@ -90,17 +90,22 @@ struct RangeIter {
 
 impl RangeIter {
     fn new(endpoints: (Endpoint, Endpoint), step: isize) -> Self {
-        RangeIter {
-            start: match endpoints.0 {
-                Endpoint::Inclusive(v) => v,
-                Endpoint::Exclusive(v) => v + 1,
-            },
-            end: match endpoints.1 {
-                Endpoint::Inclusive(v) => v + 1,
-                Endpoint::Exclusive(v) => v,
-            },
-            step,
-        }
+        let (start, end) = if step > 0 {
+            match (endpoints.0, endpoints.1) {
+                (Endpoint::Inclusive(s), Endpoint::Inclusive(e)) => (s, e),
+                (Endpoint::Inclusive(s), Endpoint::Exclusive(e)) => (s, e - 1),
+                (Endpoint::Exclusive(s), Endpoint::Inclusive(e)) => (s + 1, e),
+                (Endpoint::Exclusive(s), Endpoint::Exclusive(e)) => (s + 1, e - 1),
+            }
+        } else {
+            match (endpoints.0, endpoints.1) {
+                (Endpoint::Inclusive(s), Endpoint::Inclusive(e)) => (s, e),
+                (Endpoint::Inclusive(s), Endpoint::Exclusive(e)) => (s, e + 1),
+                (Endpoint::Exclusive(s), Endpoint::Inclusive(e)) => (s - 1, e),
+                (Endpoint::Exclusive(s), Endpoint::Exclusive(e)) => (s - 1, e + 1),
+            }
+        };
+        RangeIter { start, end, step }
     }
 }
 
@@ -108,7 +113,17 @@ impl Iterator for RangeIter {
     type Item = isize;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.start < self.end {
+        if self.step > 0 {
+            if self.start <= self.end {
+                let result = self.start;
+                self.start += self.step;
+                return Some(result);
+            } else {
+                return None;
+            }
+        }
+
+        if self.start >= self.end {
             let result = self.start;
             self.start += self.step;
             Some(result)
@@ -132,7 +147,8 @@ pub fn range(left: Endpoint, right: Endpoint, step: isize) -> impl Iterator<Item
 /// then n/x is a divisor of n that is smaller than sqrt(n).
 struct Divisors {
     n: u64,
-    curr: u64, // TODO: you may define additional fields here
+    curr: u64,
+    factor: Vec<u64>, // TODO: you may define additional fields here
 }
 
 impl Iterator for Divisors {
@@ -143,24 +159,20 @@ impl Iterator for Divisors {
             return None;
         }
 
-        let mut temp = Vec::new();
-
         let sqrt = (self.n as f64).sqrt();
         while self.curr <= sqrt.floor() as u64 {
             if self.n % self.curr == 0 {
                 let ret = self.curr;
-                temp.push(ret);
+                self.factor.push(ret);
                 self.curr += 1;
                 return Some(ret);
             }
             self.curr += 1;
         }
         if sqrt == sqrt.trunc() {
-            _ = temp.pop();
+            _ = self.factor.pop();
         }
-        temp.reverse();
-        let mut iter = temp.iter();
-        iter.next().map(|x| self.n / x)
+        self.factor.iter().next_back().map(|x| self.n / x)
     }
 }
 
@@ -168,6 +180,7 @@ impl Iterator for Divisors {
 pub fn divisors(n: u64) -> impl Iterator<Item = u64> {
     Divisors {
         n,
-        curr: 1, // TODO: you may define additional fields here
+        curr: 1,
+        factor: vec![], // TODO: you may define additional fields here
     }
 }
