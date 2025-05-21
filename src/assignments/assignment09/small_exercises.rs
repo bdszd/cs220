@@ -96,18 +96,19 @@ pub fn interleave_n<T, const N: usize>(
     mut iters: [impl Iterator<Item = T>; N],
 ) -> impl Iterator<Item = T> {
     let mut ret: Vec<T> = Vec::new();
-    let len = iters.len();
-    loop {
-        #[allow(clippy::needless_range_loop)]
-        for i in 0..len - 1 {
-            ret.push(iters[i].next().unwrap());
+    let len = iters[0].size_hint().0;
+    let mut count = 0;
+    'a: loop {
+        for iter in &mut iters {
+            if count < len {
+                ret.push(iter.next().unwrap());
+            } else {
+                break 'a;
+            }
         }
-        if let Some(v) = iters[len - 1].next() {
-            ret.push(v);
-        } else {
-            break;
-        }
+        count += 1;
     }
+
     ret.into_iter()
 }
 
@@ -195,7 +196,7 @@ pub fn sum_is_n(inner: Vec<Vec<i64>>, n: i64) -> usize {
     let mut count = 0;
     for m in &inner[0] {
         for i in &inner[1] {
-            if m * i == n {
+            if m + i == n {
                 count += 1;
             }
         }

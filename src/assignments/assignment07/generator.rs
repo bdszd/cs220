@@ -37,10 +37,10 @@ impl<T, S> Iterator for Generator<T, S> {
 pub fn fib_generator(first: usize, second: usize) -> Generator<usize, (usize, usize)> {
     let mut state = (first, second);
     let f = |state: &mut (usize, usize)| {
-        let next = state.0 + state.1;
-        state.0 = state.1;
-        state.1 = next;
-        Yielded::Value(state.0)
+        let (a, b) = (state.0, state.1);
+        state.0 = b;
+        state.1 = a + b;
+        Yielded::Value(a)
     };
 
     Generator { state, f }
@@ -52,12 +52,19 @@ pub fn fib_generator(first: usize, second: usize) -> Generator<usize, (usize, us
 pub fn collatz_conjecture(start: usize) -> Generator<usize, usize> {
     let state = start;
     let f = |state: &mut usize| {
-        if *state % 2 == 0 {
-            Yielded::Value(*state / 2)
-        } else if *state == 1 {
+        if *state == 1 {
+            *state = 0;
+            Yielded::Value(1)
+        } else if *state == 0 {
             Yielded::Stop
+        } else if *state % 2 == 0 {
+            let ret = *state;
+            *state /= 2;
+            Yielded::Value(ret)
         } else {
-            Yielded::Value(3 * *state + 1)
+            let ret = *state;
+            *state = 3 * *state + 1;
+            Yielded::Value(ret)
         }
     };
     Generator { state, f }

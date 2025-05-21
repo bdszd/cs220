@@ -155,10 +155,6 @@ impl Iterator for Divisors {
     type Item = u64;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.curr > self.n {
-            return None;
-        }
-
         let sqrt = (self.n as f64).sqrt();
         while self.curr <= sqrt.floor() as u64 {
             if self.n % self.curr == 0 {
@@ -172,7 +168,11 @@ impl Iterator for Divisors {
         if sqrt == sqrt.trunc() {
             _ = self.factor.pop();
         }
-        self.factor.iter().next_back().map(|x| self.n / x)
+        if let Some(x) = self.factor.pop() {
+            Some(self.n / x)
+        } else {
+            None
+        }
     }
 }
 

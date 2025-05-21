@@ -175,7 +175,7 @@ pub fn du_sort(root: &File) -> Vec<(&str, usize)> {
 /// ```
 #[allow(clippy::ptr_arg)]
 pub fn remove_even(inner: &mut Vec<i64>) {
-    inner.retain(|x| x % 2 == 0);
+    inner.retain(|x| x % 2 != 0);
 }
 
 /// Remove all duplicate occurences of a number inside the array.
@@ -262,7 +262,7 @@ impl Iterator for Pythagorean {
                 if (self.m - self.n) % 2 == 1 && gcd(self.m, self.n) == 1 {
                     let a = self.m * self.m - self.n * self.n;
                     let b = 2 * self.m * self.n;
-                    let c = self.m * self.m + self.n;
+                    let c = self.m * self.m + self.n * self.n;
 
                     let (a, b) = if a < b { (a, b) } else { (b, a) };
                     self.heap.push(Reverse((c, a, b)));
@@ -272,8 +272,8 @@ impl Iterator for Pythagorean {
             self.m += 1;
             self.n = 1;
 
-            if let Some(Reverse(trip)) = self.heap.pop() {
-                return Some(trip);
+            if let Some(Reverse((c, a, b))) = self.heap.pop() {
+                return Some((a, b, c));
             }
         }
     }

@@ -76,7 +76,7 @@ impl BigInt {
         for &x in self.carrier.iter().rev() {
             let inver = !x as u64;
             let sum = inver + carry;
-            ret.push(sum as u32);
+            ret.insert(0, sum as u32);
             carry = sum >> 32;
         }
 
@@ -86,8 +86,10 @@ impl BigInt {
     /// Truncate a `BigInt` to the minimum length.
     fn truncate(&self) -> Self {
         let mut carrier = self.carrier.clone();
-        let sign_bit = carrier[0] & SIGN_MASK != 0;
+        let sign_bit = (carrier[0] & SIGN_MASK) != 0;
         let extend_word = if sign_bit { u32::MAX } else { 0 };
+
+        let mut first_keep = 0;
 
         while carrier.len() > 1 && carrier[0] == extend_word {
             let second = carrier[1];
@@ -97,10 +99,12 @@ impl BigInt {
             if expected_word != extend_word {
                 break;
             }
-            let _unused = carrier.pop();
+            first_keep += 1;
         }
 
-        BigInt { carrier }
+        BigInt {
+            carrier: carrier[first_keep..].to_vec(),
+        }
     }
 }
 
@@ -108,17 +112,33 @@ impl Add for BigInt {
     type Output = Self;
 
     fn add(self, rhs: Self) -> Self::Output {
-        let max_len = self.carrier.len().max(rhs.carrier.len()) + 1;
+        let max_len = self.carrier.len().max(rhs.carrier.len());
+        let lhs_sign = self.carrier[0] & SIGN_MASK != 0;
+        let rhs_sign = rhs.carrier[0] & SIGN_MASK != 0;
         let lhs = self.sign_extension(max_len);
         let rhs = rhs.sign_extension(max_len);
 
-        let mut ret = Vec::with_capacity(max_len);
+        let mut ret = Vec::with_capacity(max_len + 1);
         let mut carry = 0u64;
 
         for (a, b) in zip(lhs.carrier.iter().rev(), rhs.carrier.iter().rev()) {
             let sum = *a as u64 + *b as u64 + carry;
-            ret.push(sum as u32);
+            ret.insert(0, sum as u32);
             carry = sum >> 32;
+        }
+
+        let first_sign = ret[0] & SIGN_MASK != 0;
+
+        if rhs_sign == lhs_sign {
+            let has_overflow = first_sign != rhs_sign;
+            if has_overflow {
+                if rhs_sign {
+                    ret.insert(0, u32::MAX);
+                } else {
+                    ret.insert(0, 0_u32);
+                }
+                return BigInt { carrier: ret };
+            }
         }
 
         BigInt { carrier: ret }.truncate()

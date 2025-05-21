@@ -17,7 +17,7 @@ use itertools::*;
 pub fn vec_add(lhs: &[f64], rhs: &[f64]) -> Vec<f64> {
     let mut ret: Vec<f64> = Vec::new();
     for (l, r) in lhs.iter().zip(rhs.iter()) {
-        ret.push(l * r);
+        ret.push(l + r);
     }
     ret
 }
