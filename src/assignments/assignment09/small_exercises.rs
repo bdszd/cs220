@@ -193,12 +193,55 @@ pub fn calculate_mean(inner: impl Iterator<Item = (String, i64)>) -> HashMap<Str
 /// assert_eq!(sum_is_n(vec![vec![1, 2, 3], vec![2, 3]], 2), 0);
 /// ```
 pub fn sum_is_n(inner: Vec<Vec<i64>>, n: i64) -> usize {
+    // fn dfs(inner: &Vec<Vec<i64>>, depth: usize, curr_sum: i64, target: i64) -> usize {
+    //     if curr_sum > target {
+    //         return 0;
+    //     }
+
+    //     if depth == inner.len() {
+    //         return if curr_sum == target { 1 } else { 0 };
+    //     }
+
+    //     let mut count = 0;
+    //     for &x in &inner[depth] {
+    //         count += dfs(inner, depth + 1, curr_sum + x, target);
+    //     }
+    //     count
+    // }
+
+    // dfs(&inner, 0, 0, n)
+
+    if inner.is_empty() {
+        return 0;
+    }
+
+    let mut indices = vec![0; inner.len()];
     let mut count = 0;
-    for m in &inner[0] {
-        for i in &inner[1] {
-            if m + i == n {
-                count += 1;
+
+    loop {
+        let sum: i64 = indices
+            .iter()
+            .enumerate()
+            .map(|(i, &index)| inner[i][index])
+            .sum();
+
+        if sum == n {
+            count += 1;
+        }
+
+        let mut pos = inner.len();
+        while pos > 0 {
+            pos -= 1;
+            indices[pos] += 1;
+            if indices[pos] < inner[pos].len() {
+                break;
+            } else {
+                indices[pos] = 0;
             }
+        }
+
+        if pos == 0 && indices[0] == 0 {
+            break;
         }
     }
     count

@@ -99,12 +99,10 @@ impl BigInt {
             if expected_word != extend_word {
                 break;
             }
-            first_keep += 1;
+            let _ = carrier.remove(0);
         }
 
-        BigInt {
-            carrier: carrier[first_keep..].to_vec(),
-        }
+        BigInt { carrier }
     }
 }
 
@@ -113,12 +111,13 @@ impl Add for BigInt {
 
     fn add(self, rhs: Self) -> Self::Output {
         let max_len = self.carrier.len().max(rhs.carrier.len());
-        let lhs_sign = self.carrier[0] & SIGN_MASK != 0;
-        let rhs_sign = rhs.carrier[0] & SIGN_MASK != 0;
+
         let lhs = self.sign_extension(max_len);
         let rhs = rhs.sign_extension(max_len);
+        let lhs_sign = self.carrier[0] & SIGN_MASK != 0;
+        let rhs_sign = rhs.carrier[0] & SIGN_MASK != 0;
 
-        let mut ret = Vec::with_capacity(max_len + 1);
+        let mut ret = Vec::with_capacity(max_len + 2);
         let mut carry = 0u64;
 
         for (a, b) in zip(lhs.carrier.iter().rev(), rhs.carrier.iter().rev()) {
@@ -129,17 +128,21 @@ impl Add for BigInt {
 
         let first_sign = ret[0] & SIGN_MASK != 0;
 
-        if rhs_sign == lhs_sign {
-            let has_overflow = first_sign != rhs_sign;
-            if has_overflow {
-                if rhs_sign {
-                    ret.insert(0, u32::MAX);
-                } else {
-                    ret.insert(0, 0_u32);
-                }
-                return BigInt { carrier: ret };
+        if rhs_sign == lhs_sign && first_sign != rhs_sign {
+            if rhs_sign {
+                ret.insert(0, u32::MAX);
+            } else {
+                ret.insert(0, 0_u32);
             }
         }
+
+        // if !rhs_sign && !lhs_sign && first_sign {
+        //     ret.insert(0, carry as u32);
+        // }
+        // if rhs_sign && lhs_sign && !first_sign {
+        //     ret.insert(0, carry as u32);
+        //     ret.insert(0, u32::MAX);
+        // }
 
         BigInt { carrier: ret }.truncate()
     }

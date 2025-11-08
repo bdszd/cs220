@@ -61,14 +61,11 @@ pub fn next_weekday(day: DayOfWeek) -> DayOfWeek {
 /// Returns `None` if the list is empty.
 pub fn median(values: Vec<isize>) -> Option<isize> {
     let len = values.len();
-    let mut temp = values.clone();
-    temp.sort();
     if len > 0 {
-        if len / 2 == 0 {
-            Some(temp[(len + 1) / 2 - 1])
-        } else {
-            Some(temp[len / 2])
-        }
+        let mut temp = values.clone();
+        temp.sort();
+        let index = len / 2;
+        Some(temp[index])
     } else {
         None
     }
@@ -80,17 +77,17 @@ pub fn median(values: Vec<isize>) -> Option<isize> {
 /// Returns `None` if the list is empty.
 pub fn mode(values: Vec<isize>) -> Option<isize> {
     let len = values.len();
-    let mut prob = HashMap::new();
     if len > 0 {
-        for &item in &values {
-            *prob.entry(item).or_insert(1) += 1;
+        let mut prob = HashMap::new();
+        for item in &values {
+            *prob.entry(*item).or_insert(0) += 1;
         }
         let mut mode = values[0];
         let mut count = 0;
-        for (&k, &v) in &prob {
-            if v > count || (v == count && k < mode) {
-                mode = k;
-                count = v;
+        for (k, v) in &prob {
+            if *v > count || (*v == count && *k < mode) {
+                mode = *k;
+                count = *v;
             }
         }
         Some(mode)
@@ -221,15 +218,12 @@ pub fn use_editor(events: Vec<TypeEvent>) -> String {
             TypeEvent::Type(v) => ret.push(*v),
             TypeEvent::Backspace => {
                 if !ret.is_empty() {
-                    _ = ret.pop();
+                    let _ = ret.pop();
                 }
             }
             TypeEvent::Copy => clip = ret.clone(),
             TypeEvent::Paste => {
-                if !clip.is_empty() {
-                    use ::std::ops::Add;
-                    ret = ret.add(&clip);
-                }
+                ret = format!("{}{}", ret, clip);
             }
         }
     }

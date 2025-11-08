@@ -60,16 +60,16 @@ pub fn gcd(lhs: u64, rhs: u64) -> u64 {
 /// Consult <https://en.wikipedia.org/wiki/Pascal%27s_triangle> for computation of binomial
 /// coefficients without integer overflow.
 pub fn chooses(n: u64) -> Vec<u64> {
-    let mut ret = Vec::new();
-    let mut a = 1;
-    ret.push(a);
-    for i in 1..n {
-        a = (a * (n - i + 1)) / i;
-        ret.push(a);
+    let mut ret = vec![0; (n + 1) as usize];
+    ret[0] = 1;
+
+    for i in 1..=n as usize {
+        ret[i] = 1;
+        for j in (1..i).rev() {
+            ret[j] += ret[j - 1];
+        }
     }
-    if n != 0 {
-        ret.push(1);
-    }
+
     ret
 }
 
